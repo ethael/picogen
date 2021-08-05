@@ -1,2 +1,7 @@
 # IntelliJIdea project files
 /.idea
+/content
+/target
+/templates
+/static
+/config.json
