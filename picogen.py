@@ -162,12 +162,10 @@ def assemble_file_descriptor(path):
     return descriptor
 
 
-def convert_and_fill_body(descriptor, protocol, **variables):
-    """ replace placeholders in the post body with variables and convert it to the protocol format """
-    descriptor['body'] = fill(descriptor['body'], **variables)
-    name = f"{descriptor['file_name']}.{descriptor['file_ext']}"
-    # convert body if it is not written in markdown and not in the protocol specific format
+def convert(descriptor, protocol):
+    """ convert body to the protocol format if current format is markdown"""
     if descriptor['file_ext'] in ['markdown', 'md']:
+        name = f"{descriptor['file_name']}.{descriptor['file_ext']}"
         if protocol == Protocol.HTTP:
             import commonmark
             try:
@@ -183,8 +181,6 @@ def convert_and_fill_body(descriptor, protocol, **variables):
         else:
             suffix = protocol.file_suffix()
             Log.err(f"Convert md => {suffix} for {name} failed: Unsupported format.")
-    # generate summary for finalized body
-    descriptor['summary'] = parse_trailer(name, descriptor['body'], protocol)
     return descriptor
 
 
@@ -204,10 +200,12 @@ def fill_taxonomy_value_index(protocol, config, t_value, t_config, t_variables, 
     reverse = False if 'order_direction' in tvi_config and tvi_config['order_direction'] == 'asc' else True
     descriptors = sorted(descriptors, reverse=reverse, key=lambda descriptor: descriptor[order_by])
     limit = int(tvi_config['limit']) if 'limit' in tvi_config else len(descriptors)
-    # convert, fill and save index item templates
+    # fill, summarize and save index item templates
     for d in descriptors[0:limit]:
         v = {**config, **t_variables, **t_value_variables, **output_variables, **dynamic_variables, **d}
-        d = convert_and_fill_body(d, protocol, **v)
+        d['body'] = fill(d['body'], **v)
+        name = f"{d['file_name']}.{d['file_ext']}"
+        d['summary'] = parse_trailer(name, d['body'], protocol)
         v = {**config, **t_variables, **t_value_variables, **output_variables, **dynamic_variables, **d}
         item_outputs.append(fill(templates[tvi_config['item_template']], **v))
     # merge index item outputs
@@ -483,6 +481,8 @@ def main():
                         else:
                             Log.warn(f"No template specified for {d['target_path']}. Using default")
                             d['template'] = cfg['default_template']
+                    # convert body from markdown to protocol specific format
+                    d = convert(d, protocol)
                     # save descriptor for later file generation
                     descriptors.append(d)
 
@@ -596,7 +596,9 @@ def main():
             # STEP 6. GENERATE STANDARD FILES
 
             for d in descriptors:
-                d = convert_and_fill_body(d, protocol, **d, **cfg, **dynamic_vars, **generated_indexes_as_variables)
+                d['body'] = fill(d['body'], **d, **cfg, **dynamic_vars, **generated_indexes_as_variables)
+                name = f"{d['file_name']}.{d['file_ext']}"
+                d['summary'] = parse_trailer(name, d['body'], protocol)
                 template = templates[d['template']]
                 write_to_file(
                     d['target_path'],
