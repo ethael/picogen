@@ -181,59 +181,59 @@ def convert(descriptor, protocol):
     return descriptor
 
 
-def fill_taxonomy_value_index(protocol, config, t_value, t_config, variables, templates, tvi_config, descriptors):
-    """ fill taxonomy value index (tvi), made of all values of specified taxonomy from all files in content dir """
+def fill_taxonomy_value_post_index(protocol, config, t_value, t_cfg, variables, templates, i_cfg, descriptors):
+    """ fill taxonomy value posts index (tvpi), made of all values of specified taxonomy from files in content dir """
     t_value_variables = {
         'taxonomy_value': t_value,
         'taxonomy_value_lower': t_value.lower(),
         'taxonomy_value_normalized': normalize_string(t_value),
-        'title': f"{t_config['title']} {t_value}",
+        'title': f"{t_cfg['title']} {t_value}",
     }
     item_outputs = []
     # sort and limit taxonomy values
-    order_by = tvi_config['order_by'] if 'order_by' in tvi_config else 'date'
-    reverse = False if 'order_direction' in tvi_config and tvi_config['order_direction'] == 'asc' else True
+    order_by = i_cfg['order_by'] if 'order_by' in i_cfg else 'date'
+    reverse = False if 'order_direction' in i_cfg and i_cfg['order_direction'] == 'asc' else True
     descriptors = sorted(descriptors, reverse=reverse, key=lambda descriptor: descriptor[order_by])
-    limit = int(tvi_config['limit']) if 'limit' in tvi_config else len(descriptors)
+    limit = int(i_cfg['limit']) if 'limit' in i_cfg else len(descriptors)
     # fill, summarize and save index item templates
     for d in descriptors[0:limit]:
         v = {**config, **variables, **t_value_variables, **d}
         v['body'] = fill(d['body'], **v)
         name = f"{d['file_name']}.{d['file_ext']}"
         v['summary'] = parse_trailer(name, v['body'], protocol)
-        item_outputs.append(fill(templates[tvi_config['item_template']], **v))
+        item_outputs.append(fill(templates[i_cfg['item_template']], **v))
     # merge index item outputs
     t_value_variables['body'] = ''.join(item_outputs)
     # fill user defined custom_variables
     v = {**config, **variables, **t_value_variables}
-    if 'custom_variables' in tvi_config:
-        for variable in tvi_config['custom_variables']:
-            t_value_variables[variable] = fill(tvi_config['custom_variables'][variable], **v)
+    if 'custom_variables' in i_cfg:
+        for variable in i_cfg['custom_variables']:
+            t_value_variables[variable] = fill(i_cfg['custom_variables'][variable], **v)
         v = {**config, **variables, **t_value_variables}
-    return fill(templates[tvi_config['template']], **v)
+    return fill(templates[i_cfg['template']], **v)
 
 
-def fill_taxonomy_value_posts_index(config, t_config, templates, tvpi_config, descriptors_by_taxonomy,
-                                    dynamic_vars, output_variables):
-    """ fill taxonomy value posts index (tvpi), made of all posts which define specified taxonomy and value """
+def fill_taxonomy_value_index(config, t_cfg, templates, i_config, descriptors_by_taxonomy,
+                              dynamic_vars, output_variables):
+    """ fill taxonomy value posts index (tvi), made of all posts which define specified taxonomy and value """
     # taxonomy specific output variables to use in template
-    t_id = t_config['id']
+    t_id = t_cfg['id']
     t_values = list(descriptors_by_taxonomy[t_id].keys())
     t_variables = {
         'taxonomy_id': t_id,
-        'taxonomy_title': t_config['title'],
-        'title': t_config['title'],
+        'taxonomy_title': t_cfg['title'],
+        'title': t_cfg['title'],
     }
-    if 'order_direction' in tvpi_config:
+    if 'order_direction' in i_config:
         # sort index based on config preference (alphabetically vs. count) in specified direction
-        reverse = False if 'order_direction' in tvpi_config and tvpi_config['order_direction'] == 'asc' else True
-        order_by_count = True if 'order_by' in tvpi_config and tvpi_config['order_by'] == 'count' else False
+        reverse = False if 'order_direction' in i_config and i_config['order_direction'] == 'asc' else True
+        order_by_count = True if 'order_by' in i_config and i_config['order_by'] == 'count' else False
         t_values = sorted(
             t_values,
             reverse=reverse,
             key=lambda t_value: len(descriptors_by_taxonomy[t_id][t_value]) if order_by_count else t_value
         )
-    limit = tvpi_config['limit'] if 'limit' in tvpi_config else len(t_values)
+    limit = i_config['limit'] if 'limit' in i_config else len(t_values)
     tv_bodies = []
     # generate body for every taxonomy value
     for tv in t_values[0:int(limit)]:
@@ -244,15 +244,15 @@ def fill_taxonomy_value_posts_index(config, t_config, templates, tvpi_config, de
             'taxonomy_value_posts_count': len(descriptors_by_taxonomy[t_id][tv])
         }
         # add whole another generated index of choice if user configured to inline some index under every taxonomy value
-        if 'inlined_index_id' in tvpi_config:
-            variable_name = f"{t_id}_{tvpi_config['inlined_index_id']}" f"_{normalize_string(tv)}"
+        if 'inlined_index_id' in i_config:
+            variable_name = f"{t_id}_{i_config['inlined_index_id']}" f"_{normalize_string(tv)}"
             t_value_variables['taxonomy_value_posts_index'] = output_variables[variable_name]
         v = {**config, **t_variables, **t_value_variables, **dynamic_vars}
-        tv_bodies.append(fill(templates[tvpi_config['item_template']], **v))
+        tv_bodies.append(fill(templates[i_config['item_template']], **v))
     # join all generated bodies to one final result
     t_variables['body'] = ''.join(tv_bodies)
     v = {**config, **t_variables, **dynamic_vars}
-    output = fill(templates[tvpi_config['template']], **v)
+    output = fill(templates[i_config['template']], **v)
     return output
 
 
@@ -307,18 +307,6 @@ def main():
             directory. (http and/or gemini)
         """
     )
-    parser.add_argument(
-        '-c',
-        '--enable-comments',
-        action='store_true',
-        help="Enable support for comments. (only for 'generate')"
-    )
-    parser.add_argument(
-        '-t',
-        '--enable-tags',
-        action='store_true',
-        help="Enable support for tags. (only for 'generate')"
-    )
 
     # parse arguments
     args = parser.parse_args()
@@ -326,18 +314,6 @@ def main():
     if len(sys.argv) == 1:
         parser.print_help()
         exit(0)
-    # do not allow use of -c and -t for 'serve' option
-    if args.serve and (args.enable_comments or args.enable_tags):
-        Log.err("--enable-comments (-c) or --enable-tags (-t) can not be used with --serve (-s)")
-        exit(1)
-    # do not allow use of -p for 'generate' option
-    if args.generate and args.port:
-        Log.err("--port (-p) can not be used with --generate (-g)")
-        exit(1)
-    # do not allow use of -p -t and -c for 'init' option
-    if args.init and (args.port or args.enable_comments or args.enable_tags):
-        Log.err("--port (-p) --enable-comments (-c) --enable-tags (-t) can not be used with --init (-i)")
-        exit(1)
 
     # business logic for --init
     if args.init:
@@ -381,7 +357,7 @@ def main():
             cfg = json.loads(read_file('config.json'))
         except FileNotFoundError as e:
             Log.err(f"Initial filesystem check failed: {e}")
-            Log.err(f"Run picogen with --init to execute filesystem structure setup")
+            Log.err(f"Run picogen with --init to execute filesystem structure setup with demo data")
             exit(1)
 
         # run business logic for --generate for every type (http, gemini)
@@ -407,36 +383,32 @@ def main():
                     child_and_parent = template_name.split('_')
                     parent_value = templates[child_and_parent[1]]
                     child_value = templates.pop(template_name)
-                    child_value = fill(parent_value, body=child_value)
-                    templates[child_and_parent[0]] = child_value
-                    # declare initial dynamic variables
+                    templates[child_and_parent[0]] = fill(parent_value, body=child_value)
+            # declare initial dynamic variables (generated by picogen)
             dynamic_vars = dict()
             dynamic_vars['scheme'] = scheme
             dynamic_vars['current_year'] = datetime.now().year
             dynamic_vars['rfc3339_now'] = datetime.now(timezone.utc).astimezone().isoformat()
+            # optionally load page views for posts if file available (file format is file:views on every line)
+            page_views = dict()
+            if 'page_views_file' in cfg:
+                for line in read_file(cfg['page_views_file']).splitlines():
+                    parts = line.split(sep=":")
+                    page_views[parts[0]] = int(parts[1])
 
-            # STEP 2. ASSEMBLE FILE DESCRIPTORS
+            # STEP 2. ASSEMBLE FILE DESCRIPTORS (FILES IN CONTENT DIR PARSED TO DICTS)
 
             # array to store all generated file descriptors for later template filling
             descriptors = []
             # dict where descriptor is copied under all values of all taxonomies declared in the file headers
             # it will be used for later taxonomy value indexes and taxonomy value posts indexes generation
             descriptors_by_t_value = dict()
-            # dict for storing page views per every post
-            page_views = dict()
-            if 'page_views_file' in cfg:
-                # if user provided optional page_views_file load page views (file format is file:views on every line)
-                f = read_file(cfg['page_views_file'])
-                for line in f.splitlines():
-                    parts = line.split(sep=":")
-                    page_views[parts[0]] = int(parts[1])
 
             for root, dirs, files in os.walk('content'):
                 # recursively travers content folder. assemble and save descriptor for every file
                 for f in files:
                     # assemble descriptor
-                    file_path = os.path.join(root, f)
-                    d = assemble_file_descriptor(file_path, cfg)
+                    d = assemble_file_descriptor(os.path.join(root, f), cfg)
                     # don't process this file further if marked as draft
                     if 'draft' in d:
                         continue
@@ -484,79 +456,65 @@ def main():
 
             # STEP 3. ASSEMBLE INDEX DESCRIPTORS
 
-            # TODO rename variables bellow because whole script consider descriptors to be a file descriptors
-            # TODO finish refactoring from this line
-
-            # descriptors for taxonomy value indexes (tvi) that are built as variables
-            tvi_list_variable_descriptors = []
-            # descriptors for taxonomy value posts indexes (tvpi) that are built as variables
-            tvpi_list_variable_descriptors = []
-            # descriptors for taxonomy value indexes (tvi) that are built as files
-            tvi_list_file_descriptors = []
-            # descriptors for taxonomy value posts indexes (tvpi) that are built as files
-            tvpi_list_file_descriptors = []
-            # generated tvi and tvpi indexes as variables
-            indexes_as_variables = dict()
+            # generation configs for those taxonomy value indexes (tvpi) which are provided as generated variables
+            tvpi_as_variable_cfgs = []
+            # generation configs for those taxonomy value posts indexes (tvi) which are provided as generated variables
+            tvi_as_variable_cfgs = []
+            # generation configs for taxonomy value indexes (tvpi) which are exported to files
+            tvpi_as_file_cfgs = []
+            # generation configs for taxonomy value posts indexes (tvi) that are exported to files
+            tvi_as_file_cfgs = []
             if 'taxonomies' in cfg:
                 for t in cfg['taxonomies']:
-                    # taxonomy specific variables
-                    # TODO rename indexes to value_indexes (taxonomy term is already the encapsulating section)
-                    if 'indexes' in t:
+                    if 'value_posts_indexes' in t:
                         # inspect declared indexes for taxonomy
-                        for i in t['indexes']:
-                            tvi_descriptor = {
-                                'taxonomy': t,
-                                'index': i
-                            }
-                            if 'output_type' in i and i['output_type'] == 'file':
-                                tvi_list_file_descriptors.append(tvi_descriptor)
-                            elif 'output_type' in i and i['output_type'] == 'variable':
-                                tvi_list_variable_descriptors.append(tvi_descriptor)
-                    # TODO rename value_lists to value_posts_indexes (taxonomy term is already the encapsulating sectio)
-                    if 'value_lists' in t:
+                        for vpi in t['value_posts_indexes']:
+                            i_cfg = {'taxonomy_cfg': t, 'index_cfg': vpi}
+                            if 'output_type' in vpi and vpi['output_type'] == 'file':
+                                tvpi_as_file_cfgs.append(i_cfg)
+                            elif 'output_type' in vpi and vpi['output_type'] == 'variable':
+                                tvpi_as_variable_cfgs.append(i_cfg)
+                    if 'value_indexes' in t:
                         # inspect declared value lists for taxonomy
-                        for vl in t['value_lists']:
-                            tvpi_descriptor = {
-                                'taxonomy': t,
-                                'value_list': vl
-                            }
-                            if 'output_type' in vl and vl['output_type'] == 'file':
-                                tvpi_list_file_descriptors.append(tvpi_descriptor)
-                            elif 'output_type' in vl and vl['output_type'] == 'variable':
-                                tvpi_list_variable_descriptors.append(tvpi_descriptor)
+                        for vi in t['value_indexes']:
+                            i_cfg = {'taxonomy_cfg': t, 'index_cfg': vi}
+                            if 'output_type' in vi and vi['output_type'] == 'file':
+                                tvi_as_file_cfgs.append(i_cfg)
+                            elif 'output_type' in vi and vi['output_type'] == 'variable':
+                                tvi_as_variable_cfgs.append(i_cfg)
 
-            # STEP 4. GENERATE INDEXES AS VARIABLES
+            # STEP 4. GENERATE INDEXES WHICH ARE PROVIDED AS GENERATED VARIABLES IN STEP 5 AND STEP 6
 
-            for tlvd in tvi_list_variable_descriptors:
-                t_id = tlvd['taxonomy']['id']
-                t_cfg = tlvd['taxonomy']
-                tvi_cfg = tlvd['index']
+            generated_variables = dict()
+            for tvpi_cfg in tvpi_as_variable_cfgs:
+                t_cfg = tvpi_cfg['taxonomy_cfg']
+                t_id = t_cfg['id']
+                i_cfg = tvpi_cfg['index_cfg']
                 # taxonomy specific output variables to use in template
                 t_variables = {'taxonomy_id': t_id, 'taxonomy_title': t_cfg['title'], 'title': t_cfg['title'], }
                 # iterate over taxonomy values
                 for t_value in descriptors_by_t_value[t_id]:
-                    output = fill_taxonomy_value_index(protocol, cfg, t_value, t_cfg,
-                                                       {**t_variables, **indexes_as_variables, **dynamic_vars},
-                                                       templates, tvi_cfg, descriptors_by_t_value[t_id][t_value])
-                    variable_name = f"{t_cfg['id']}_{tvi_cfg['id']}_{normalize_string(t_value)}"
-                    indexes_as_variables[variable_name] = output
+                    output = fill_taxonomy_value_post_index(protocol, cfg, t_value, t_cfg,
+                                                            {**t_variables, **generated_variables, **dynamic_vars},
+                                                            templates, i_cfg, descriptors_by_t_value[t_id][t_value])
+                    variable_name = f"{t_id}_{i_cfg['id']}_{normalize_string(t_value)}"
+                    generated_variables[variable_name] = output
                     Log.ok(f"Generated {variable_name} taxonomy index variable")
-            for vlvd in tvpi_list_variable_descriptors:
-                t_cfg = vlvd['taxonomy']
-                tvpi_cfg = vlvd['value_list']
-                output = fill_taxonomy_value_posts_index(cfg, t_cfg, templates, tvpi_cfg, descriptors_by_t_value,
-                                                         dynamic_vars, indexes_as_variables)
-                variable_name = f"{t_cfg['id']}_{tvpi_cfg['id']}"
-                indexes_as_variables[variable_name] = output
+            for tvi_cfg in tvi_as_variable_cfgs:
+                t_cfg = tvi_cfg['taxonomy_cfg']
+                i_cfg = tvi_cfg['index_cfg']
+                output = fill_taxonomy_value_index(cfg, t_cfg, templates, i_cfg, descriptors_by_t_value,
+                                                   dynamic_vars, generated_variables)
+                variable_name = f"{t_cfg['id']}_{i_cfg['id']}"
+                generated_variables[variable_name] = output
                 Log.ok(f"Generated {variable_name} taxonomy value list variable")
 
-            #  STEP 5. GENERATE INDEXES AS FILES
+            #  STEP 5. GENERATE INDEXES WHICH ARE EXPORTED TO FILES
 
-            # all variables has been generated. Generate files for indexes
-            for ilfd in tvi_list_file_descriptors:
-                t_id = ilfd['taxonomy']['id']
-                t_cfg = ilfd['taxonomy']
-                tvi_cfg = ilfd['index']
+            for tvpi_cfg in tvpi_as_file_cfgs:
+                t_cfg = tvpi_cfg['taxonomy_cfg']
+                t_id = t_cfg['id']
+                i_cfg = tvpi_cfg['index_cfg']
                 # taxonomy specific output variables to use in template
                 t_variables = {
                     'taxonomy_id': t_id,
@@ -565,44 +523,39 @@ def main():
                 }
                 # iterate over taxonomy values
                 for t_value in descriptors_by_t_value[t_id]:
-                    output = fill_taxonomy_value_index(protocol, cfg, t_value, t_cfg,
-                                                       {**t_variables, **dynamic_vars, **indexes_as_variables},
-                                                       templates, tvi_cfg, descriptors_by_t_value[t_id][t_value])
+                    output = fill_taxonomy_value_post_index(protocol, cfg, t_value, t_cfg,
+                                                            {**t_variables, **dynamic_vars, **generated_variables},
+                                                            templates, i_cfg, descriptors_by_t_value[t_id][t_value])
                     target_path = os.path.join(
                         f"target/{suffix}/{t_cfg['id']}",
                         normalize_string(t_value) if t_value else '',
-                        f'{tvi_cfg["id"]}.{tvi_cfg["output_suffix"] if "output_suffix" in tvi_cfg else suffix}'
+                        f'{i_cfg["id"]}.{i_cfg["output_suffix"] if "output_suffix" in i_cfg else suffix}'
                     )
                     write_to_file(target_path, output)
-                    Log.ok(f"Generated {t_cfg['id']} {tvi_cfg['id']} index => {target_path}")
-            # value list files
-            for vlfd in tvpi_list_file_descriptors:
-                t_id = vlfd['taxonomy']['id']
-                t_cfg = vlfd['taxonomy']
-                tvpi_cfg = vlfd['value_list']
-                output = fill_taxonomy_value_posts_index(cfg, t_cfg, templates, tvpi_cfg, descriptors_by_t_value,
-                                                         dynamic_vars, indexes_as_variables)
+                    Log.ok(f"Generated {t_cfg['id']} {i_cfg['id']} index => {target_path}")
+
+            for tvi_cfg in tvi_as_file_cfgs:
+                t_cfg = tvi_cfg['taxonomy_cfg']
+                t_id = t_cfg['id']
+                i_cfg = tvi_cfg['index_cfg']
+                output = fill_taxonomy_value_index(cfg, t_cfg, templates, i_cfg, descriptors_by_t_value,
+                                                   dynamic_vars, generated_variables)
                 target_path = os.path.join(
                     f"target/{suffix}/{t_id}",
-                    f'{tvpi_cfg["id"]}.{tvpi_cfg["output_suffix"] if "output_suffix" in tvpi_cfg else suffix}'
+                    f'{i_cfg["id"]}.{i_cfg["output_suffix"] if "output_suffix" in i_cfg else suffix}'
                 )
                 write_to_file(target_path, output)
-                Log.ok(f"Generated {t_cfg['id']} {tvpi_cfg['id']} value_list => {target_path}")
+                Log.ok(f"Generated {t_cfg['id']} {i_cfg['id']} value_list => {target_path}")
 
-            # STEP 6. GENERATE STANDARD FILES
+            # STEP 6. GENERATE STANDARD FILES FROM CONTENT DIRECTORY
 
             for d in descriptors:
-                d['body'] = fill(d['body'], **d, **cfg, **dynamic_vars, **indexes_as_variables)
+                d['body'] = fill(d['body'], **d, **cfg, **dynamic_vars, **generated_variables)
                 name = f"{d['file_name']}.{d['file_ext']}"
                 d['summary'] = parse_trailer(name, d['body'], protocol)
                 template = templates[d['template']]
-                write_to_file(
-                    d['target_path'],
-                    fill(template, **d, **cfg, **dynamic_vars, **indexes_as_variables)
-                )
+                write_to_file(d['target_path'], fill(template, **d, **cfg, **dynamic_vars, **generated_variables))
                 Log.ok(f"Generated {d['file_name']}.{d['file_ext']} => {d['target_path']}")
-
-            # TODO custom target_path (or alias) in headers/index config (so blog feed.xml will be at root)
 
 
 if __name__ == '__main__':
