@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2020-2021 
+# Copyright (c) 2020-2021
 # Marián Mižik <marian@mizik.sk>, Martin Hlavňa <mato.hlavna@gmail.com>
 #
 # MIT License
@@ -11,10 +11,10 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -86,9 +86,6 @@ class Protocol(Enum):
             Log.err(f'Scheme detection failed: Unknown protocol: {self}')
 
 
-def format_to_rfc3339(value):
-    """ format 'value' (string in format: yyyy-mm-dd) to rfc3339 string """
-    return datetime.strptime(value, '%Y-%m-%d').astimezone().isoformat()
 
 
 def normalize_string(value):
@@ -135,14 +132,13 @@ def parse_trailer(name, body, body_format):
         Log.err(f"Summarize failed for {name}. Reason: Unknown body format: {body_format}")
 
 
-# TODO do we need to send here body as a first argument when it is also in the variables?
 def fill(string_with_placeholders, **variables):
-    """ find {{ x }} placeholders and replace with variables """
+    """ find {{ x }} placeholders in the string source and replace them with variables """
     return re.sub(r'{{\s*([^}\s]+)\s*}}',
                   lambda m: str(variables.get(m.group(1), m.group(0))), string_with_placeholders)
 
 
-def assemble_file_descriptor(path):
+def assemble_file_descriptor(path, cfg):
     """ assemble and return file descriptor dictionary for the supplied 'path' """
     descriptor = dict()
     # parse all annotations from the file beginning and add them to descriptor
@@ -158,7 +154,10 @@ def assemble_file_descriptor(path):
     descriptor['file_ext'] = os.path.basename(path).split('.')[1]
     # add creation date if not declared and its rfc3339 variant (for atom feed)
     descriptor['date'] = descriptor['date'] if 'date' in descriptor else '1970-01-01'
-    descriptor['rfc3339_date'] = format_to_rfc3339(descriptor['date'])
+    date_object = datetime.strptime(descriptor['date'], '%Y-%m-%d').astimezone()
+    if 'custom_date_format' in cfg:
+        descriptor['formatted_date'] = date_object.strftime(cfg['custom_date_format'])
+    descriptor['rfc3339_date'] = date_object.isoformat()
     return descriptor
 
 
@@ -377,7 +376,7 @@ def main():
     if args.generate:
         cfg = None
         try:
-            # clean target directory 
+            # clean target directory
             if os.path.isdir('target'):
                 shutil.rmtree('target')
                 os.makedirs('target')
@@ -440,14 +439,14 @@ def main():
                 for f in files:
                     # assemble descriptor
                     file_path = os.path.join(root, f)
-                    d = assemble_file_descriptor(file_path)
+                    d = assemble_file_descriptor(file_path, cfg)
                     # don't process this file further if marked as draft
                     if 'draft' in d:
                         continue
                     # don't process if it isn't markdown nor protocol native file
                     if d['file_ext'] not in ['markdown', 'md', suffix]:
                         continue
-                    # assemble correct target path and relative path 
+                    # assemble correct target path and relative path
                     if d['file_name'] == 'index':
                         d['target_path'] = os.path.join(f'target/{suffix}', root[8:], f'index.{suffix}')
                         d['relative_path'] = os.path.join(cfg['base_path'], root[8:], f'index.{suffix}')
