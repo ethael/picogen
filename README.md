@@ -15,7 +15,7 @@
 # Quick start
 * git clone https://github.com/ethael/picogen.git
 * cd picogen
-* pip install json unidecode beautifulsoup4 md2gemini commonmark jetforce
+* pip install Unidecode beautifulsoup4 md2gemini commonmark Jetforce
 * python picogen.py --init
 * python picogen.py --generate http
 * python picogen.py --serve http
