@@ -26,7 +26,7 @@
 * amfora gemini://localhost:8000  (amfora is only example. use any gemini browser you like)
 
 # How does it work?
-I encourage to check the code. It is sort, nice and full of comments. But for those who are happier reading docs, let's dive in!
+I encourage to check the code. It is short, nice and full of comments. But for those who are happier reading docs, let's dive in!
 ## TL;DR
 1. Clean *target* folder
 2. Load configuration from *config.json*
