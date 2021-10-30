@@ -64,7 +64,7 @@ Taxonomy means categorization or classification. Best known examples are tags, c
 ]
 ```
 
-This means picogen will generate value index (TVI) and output it as a variable called *tags_comma_separated_list*, so you can use the generated index in some other template like so: {{ tags_comma_separated_list }}. We have declared what template should picogen use for the index and also for every index item. Templates with such names should be available in the *tepmlates* folder. If the declared output_type would be *file*, the index would be generated as a file into the root folder of specific taxonomy. Check example projects *config.json* files to get more examples.
+This means picogen will generate value index (TVI) and output it as a variable called *tags_comma_separated_list*, so you can use the generated index in some other template like so: `{{ tags_comma_separated_list }}`. We have declared what template should picogen use for the index and also for every index item. Templates with such names should be available in the *tepmlates* folder. If the declared output_type would be *file*, the index would be generated as a file into the root folder of specific taxonomy. Check example projects *config.json* files to get more examples.
 
 ### Template
 #### Syntax
