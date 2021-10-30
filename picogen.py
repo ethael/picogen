@@ -263,9 +263,6 @@ def main():
     To initialize with functional demo page data for both http and gemini run:
     %(prog)s --init http gemini
 
-    To generate both http and gemini with support for tags and comments run:
-    %(prog)s --generate http gemini --enable-comments --enable-tags
-
     To serve target locally using target/[FORMAT] as root dir run:
     %(prog)s --serve [FORMAT]
     
