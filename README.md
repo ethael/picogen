@@ -41,8 +41,31 @@ I encourage to check the code. It is short, nice and full of comments. But for t
 7. Generate resulting file structure to *target* folder
 
 ## Details
+
 ### Taxonomy
-TBD
+
+Taxonomy means categorization or classification. Best known examples are tags, categories, blog series... you name it. In picogen you can define any taxonomy you want. Just add it's name and values to file header like so: `tags: astronomy, pulsars`. You can use this declaration as a variable in the page/post template by writing: `{{ tags }}`. Picogen can also automtically generate index of all taxonomy values (taxonomy value index: TVI) for you and output it as a file or as a variable, that you can use in templates. The same applies for generating index of all posts (taxonomy value post index: TVPI). The later is generated per taxonomy value. So for our simple example case above, it would generate post index for `astronomy` and another for `pulsars`. You can configure as many indexes as you like. For example, this is a *config.json* snippet for adding TVI under *tags* taxonomy:   
+
+```json:
+"taxonomies": [
+  {
+    "id": "tags", 
+    "title": "Tags", 
+    "document_template": "post",
+    "value_indexes": [
+      {
+        "id": "comma_separated_list",
+        "template": "csl",
+        "item_template": "csl_item",
+        "output_type": "variable"
+      }
+    ]
+  }
+]
+```
+
+This means picogen will generate value index (TVI) and output it as a variable called *tags_comma_separated_list*, so you can use the generated index in some other template like so: {{ tags_comma_separated_list }}. We have declared what template should picogen use for the index and also for every index item. Templates with such names should be available in the *tepmlates* folder. If the declared output_type would be *file*, the index would be generated as a file into the root folder of specific taxonomy. Check example projects *config.json* files to get more examples.
+
 ### Template
 #### Syntax
 TBD
