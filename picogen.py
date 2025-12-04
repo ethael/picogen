@@ -523,11 +523,18 @@ def main():
                     output = fill_taxonomy_value_post_index(protocol, cfg, t_value, t_cfg,
                                                             {**t_variables, **dynamic_vars, **generated_variables},
                                                             templates, i_cfg, descriptors_by_t_value[t_id][t_value])
-                    target_path = os.path.join(
-                        f"target/{suffix}/{t_cfg['id']}",
-                        normalize_string(t_value) if t_value else '',
-                        f'{i_cfg["id"]}.{i_cfg["output_suffix"] if "output_suffix" in i_cfg else suffix}'
-                    )
+                    # use custom output_path if specified, otherwise use default taxonomy-based path
+                    if 'output_path' in i_cfg:
+                        target_path = os.path.join(
+                            f"target/{suffix}",
+                            f'{i_cfg["output_path"]}'
+                        )
+                    else:
+                        target_path = os.path.join(
+                            f"target/{suffix}/{t_cfg['id']}",
+                            normalize_string(t_value) if t_value else '',
+                            f'{i_cfg["id"]}.{i_cfg["output_suffix"] if "output_suffix" in i_cfg else suffix}'
+                        )
                     write_to_file(target_path, output)
                     Log.ok(f"Generated {t_cfg['id']} {i_cfg['id']} index => {target_path}")
 
