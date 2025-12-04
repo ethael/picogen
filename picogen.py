@@ -261,7 +261,10 @@ def main():
     parser = argparse.ArgumentParser(usage="""
 
     To initialize with functional demo page data for both http and gemini run:
-    %(prog)s --init http gemini
+    %(prog)s --init 
+    
+    To generate the resulting html or gemini run:
+    %(prog)s --generate [FORMAT]
 
     To serve target locally using target/[FORMAT] as root dir run:
     %(prog)s --serve [FORMAT]
