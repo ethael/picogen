@@ -317,7 +317,7 @@ def main():
         import urllib.request as ur
         from zipfile import ZipFile
         Log.info('Downloading archive with initialization files')
-        ur.urlretrieve('https://mizik.eu/picogen/init.zip', 'init.zip')
+        ur.urlretrieve('https://github.com/ethael/picogen/raw/main/init.zip', 'init.zip')
         with ZipFile('init.zip', 'r') as zipFile:
             Log.info(f'Unpacking in current directory ({os.path.abspath(os.getcwd())})')
             zipFile.extractall()
