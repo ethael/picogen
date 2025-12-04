@@ -13,17 +13,19 @@
 * I accepted challenge to create single file, full-featured generator with less then 500 lines of code, which will be able to fully replace Hugo/Jekyll on my friends sites.
 
 # Quick start
-* git clone https://github.com/ethael/picogen.git
-* cd picogen
-* pip install -r requirements.txt
-* python picogen.py --init
-* python picogen.py --generate http
-* python picogen.py --serve http
-* lynx http://localhost:8000  (lynx is only example. use any web browser you like)
+```
+git clone https://github.com/ethael/picogen.git
+cd picogen
+pip install -r requirements.txt
+python picogen.py --init
+python picogen.py --generate http
+python picogen.py --serve http
+lynx http://localhost:8000  # (lynx is only example. use any web browser you like)
 
-* python picogen.py --generate gemini
-* python picogen.py --serve gemini
-* amfora gemini://localhost:8000  (amfora is only example. use any gemini browser you like)
+python picogen.py --generate gemini
+python picogen.py --serve gemini
+amfora gemini://localhost:8000  # (amfora is only example. use any gemini browser you like)
+```
 
 # How does it work?
 I encourage you to check the code. It is short, nice and full of comments. But for those who are happier reading docs, let's dive in!
