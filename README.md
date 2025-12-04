@@ -139,9 +139,9 @@ Picogen generates index variables based on taxonomy configuration:
 **Format:** `{{ taxonomy_id_index_id }}`
 
 **Examples:**
-- `{{ blog_recent-posts_ }}` - Recent blog posts list
+- `{{ blog_recent-posts }}` - Recent blog posts list
 - `{{ tags_simple-list }}` - Comma-separated tag list
-- `{{ blog_index-by-date_ }}` - Date-ordered blog index
+- `{{ blog_index-by-date }}` - Date-ordered blog index
 
 For taxonomy value-specific indexes:
 **Format:** `{{ taxonomy_id_index_id_normalized-value }}`
@@ -170,12 +170,12 @@ Content files start with HTML comment metadata:
 ```markdown
 <!-- date: 2024-01-15 -->
 <!-- title: Welcome to Picogen -->
-<!-- blog: -->
+<!-- blog -->
 <!-- tags: Tutorial, Getting Started -->
 <!-- series: Getting Started Guide -->
 <!-- readtime: 3 -->
 <!-- template: custom-template -->
-<!-- draft: -->
+<!-- draft -->
 ```
 
 **Standard Fields:**
@@ -190,7 +190,7 @@ Content files start with HTML comment metadata:
 **Taxonomy Fields:**
 
 Any taxonomy defined in config can be used:
-- `blog:` - Empty value marks as blog post
+- `blog` or `blog:` - Empty value marks as blog post (both formats are equivalent)
 - `tags: Value1, Value2` - Comma-separated values
 - `series: Series Name` - Single or comma-separated values
 
@@ -433,7 +433,7 @@ Access in templates: `{{ page_views }}`
 Mark posts as drafts to skip during generation:
 
 ```markdown
-<!-- draft: -->
+<!-- draft -->
 ```
 
 Posts with `draft` field are completely ignored.
@@ -446,7 +446,7 @@ Posts with `draft` field are completely ignored.
 ```markdown
 <!-- date: 2025-01-15 -->
 <!-- title: My First Post -->
-<!-- blog: -->
+<!-- blog -->
 <!-- tags: Tutorial, Beginner -->
 <!-- readtime: 5 -->
 

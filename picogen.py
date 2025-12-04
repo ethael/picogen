@@ -141,10 +141,10 @@ def assemble_file_descriptor(path, cfg):
     descriptor = dict()
     # parse all annotations from the file beginning and add them to descriptor
     f = read_file(path)
-    for m in re.finditer(r'\s*<!--\s*(.+?)\s*:\s*(.+?)\s*-->\s*|.+', f):
+    for m in re.finditer(r'\s*<!--\s*(.+?)\s*(?::\s*(.+?)\s*)?-->\s*|.+', f):
         if not m.group(1):
             break
-        descriptor[m.group(1)] = m.group(2)
+        descriptor[m.group(1)] = m.group(2) if m.group(2) else ''
     # the rest is document body
     descriptor['body'] = f.split("\n", len(descriptor))[len(descriptor)]
     # add file name and extension
@@ -497,7 +497,10 @@ def main():
                     output = fill_taxonomy_value_post_index(protocol, cfg, t_value, t_cfg,
                                                             {**t_variables, **generated_variables, **dynamic_vars},
                                                             templates, i_cfg, descriptors_by_t_value[t_id][t_value])
-                    variable_name = f"{t_id}_{i_cfg['id']}_{normalize_string(t_value)}"
+                    normalized_value = normalize_string(t_value)
+                    variable_name = f"{t_id}_{i_cfg['id']}"
+                    if normalized_value:
+                        variable_name += f"_{normalized_value}"
                     generated_variables[variable_name] = output
                     Log.ok(f"Generated {variable_name} taxonomy index variable")
             for tvi_cfg in tvi_as_variable_cfgs:
